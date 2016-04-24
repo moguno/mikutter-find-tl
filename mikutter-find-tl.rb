@@ -1,8 +1,12 @@
+#coding: UTF-8
 
 Plugin.create(:"mikutter-find-tl") {
+
+  # インクリメンタルサーチ用のクラス
   class IncrementalSearch
     attr_accessor :word
 
+    # スレッド停止
     def stop
       @stop = true
     end
@@ -10,11 +14,12 @@ Plugin.create(:"mikutter-find-tl") {
     def initialize(model, &searched)
       @word = ""
 
+      # スレッドを起こす
       Thread.new {
         prev_word = ""
 
         loop {
-begin
+          # スレッド停止
           if @stop
             changed_messages = []
 
@@ -36,14 +41,14 @@ begin
             break
           end
 
+          # 検索ワードが変わった
           if prev_word != @word
-            # メッセージの配列を作る
+            # メッセージにキーワードに一致してるかを示す:serach_matchをつける
             messages = []
             model.each { |_| messages << _[2][Gtk::TimeLine::InnerTL::MESSAGE] }
 
             changed_messages = []
 
-            # メッセージにキーワードに一致してるかを示す:serach_matchをつける
             messages.each { |message|
               message[:search_match] ||= false
 
@@ -64,16 +69,14 @@ begin
           end
 
           prev_word = @word
+
           sleep(0.5)
-rescue => e
-puts e
-puts e.backtrace
-end
         }
       }
     end
   end
 
+  # 検索ボックスを作る
   def generate_findbox
     box = Gtk::HBox.new
 
@@ -99,6 +102,7 @@ end
     box
   end
 
+  # 検索結果の背景色を変更する
   filter_message_background_color { |message, color|
     selected = message.is_a?(Gdk::MiraclePainter) && message.selected
 
@@ -111,18 +115,31 @@ end
     [message, new_color]
   }
 
-  @shown = {}
+  # 検索ボックスを閉じる
+  def close_findbox!
+    if @shown
+      @shown[:incremental_search].stop 
+      @shown[:tab_container].remove(@shown[:findbox])
+      @shown = nil
+    end
+  end
 
+  # コマンド
   command(:find,
     :name => _("TL検索"),
     :condition => lambda { |opt| true },
     :visible => true,
     :role => :timeline) { |opt|
 
-    if @shown[opt.widget.slug]
-      # 検索ボックスにフォーカスを移動
-      @shown[opt.widget.slug].find_entry.grab_focus
-      next
+    # 検索ボックス表示中
+    if @shown
+      if @shown[:tl] == opt.widget.slug
+        # 検索ボックスにフォーカスを移動
+        @shown[opt.widget.slug].find_entry.grab_focus
+        next
+      else
+        close_findbox!
+      end
     end
 
     widget = Plugin[:gtk].widgetof(opt.widget)
@@ -142,33 +159,26 @@ end
     tab_container.pack_start(findbox, false)
     tab_container.reorder_child(findbox, 1)
 
-    @shown[opt.widget.slug] = findbox
-
     # 検索ボックスにフォーカスを移動
     findbox.find_entry.grab_focus
 
     # 検索スレッドを起こす
     incremental_search = IncrementalSearch.new(widget.tl.model) { |changed_messages|
-      found = false
+      # メッセージを更新する
+      changed_messages.each { |message| widget.modified(message) }
+    }
 
-      changed_messages.each { |message|
-puts "-----ddddddddddd"
-puts message
-p message[:search_match]
-        # メッセージを更新する
-        widget.modified(message)
-
-        if message[:search_match]
-          found = true
-        end
-      }
+    # 表示中の検索ボックスの情報を記憶する
+    @shown = {
+      :tl => [opt.widget.slug],
+      :findbox => findbox,
+      :incremental_search => incremental_search,
+      :tab_container => tab_container
     }
 
     # 閉じるボタン
     findbox.close_button.ssc(:clicked) { |w|
-      incremental_search.stop 
-      @shown[opt.widget.slug] = nil
-      tab_container.remove(findbox)
+      close_findbox!
     }
  
     # 検索ボックスの文字列が変化した
