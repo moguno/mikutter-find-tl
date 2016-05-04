@@ -1,10 +1,10 @@
 ---
 slug: :mikutter-find-tl
 depends:
-  mikutter: 3.3.3
+  mikutter: 3.3.0
   plugin:
   - gtk
-version: '1.0'
+version: '0.0.1'
 author: 
 name: mikutter-find-tl
 description: TL内検索
