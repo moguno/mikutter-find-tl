@@ -147,7 +147,8 @@ Plugin.create(:"mikutter-find-tl") {
     # 検索結果が優先されるようにTLの並び順を変更
     widget.tl.set_order { |message|
       x = if message[:search_match]
-        message.modified.to_i + 1000000000 
+        # 1年後に更新されたことにする
+        message.modified.to_i + (60 * 60 * 24 * 365)
       else
         message.modified.to_i
       end
