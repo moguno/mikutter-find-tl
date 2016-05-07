@@ -1,6 +1,7 @@
 #coding: UTF-8
 
 Plugin.create(:"mikutter-find-tl") {
+    UserConfig[:"mikutter-find-tl-bg-color"] ||= [65535, 32767, 32767]
 
   # インクリメンタルサーチ用のクラス
   class IncrementalSearch
@@ -107,7 +108,7 @@ Plugin.create(:"mikutter-find-tl") {
     selected = message.is_a?(Gdk::MiraclePainter) && message.selected
 
     new_color = if !selected && message.message[:search_match]
-      [65535, 32767, 32767]
+      UserConfig[:"mikutter-find-tl-bg-color"]
     else
       color
     end
@@ -186,6 +187,9 @@ Plugin.create(:"mikutter-find-tl") {
     findbox.find_entry.ssc(:changed) { |w|
       incremental_search.word = w.text
     }
+  }
+  settings("TL検索"){
+    color("一致したツイートの背景色", :"mikutter-find-tl-bg-color")
   }
 }
 
