@@ -52,7 +52,11 @@ Plugin.create(:"mikutter-find-tl") {
             messages.each { |message|
               message[:search_match] ||= false
 
-              match = ((@word != "") && message.to_s.include?(@word))
+              match = (@word != "") && [
+                message.entity.to_s.include?(@word),
+                message.user[:idname].include?(@word),
+                message.user[:name].include?(@word),
+              ].any?
 
               if message[:search_match] != match
                 changed_messages << message
