@@ -192,7 +192,9 @@ Plugin.create(:"mikutter-find-tl") {
       incremental_search.word = w.text
     }
   }
-  settings("TL検索"){
+
+
+  settings(_("TL検索")){
     color("一致したツイートの背景色", :"mikutter-find-tl-bg-color")
   }
 }
