@@ -1,7 +1,9 @@
 #coding: UTF-8
 
 Plugin.create(:"mikutter-find-tl") {
-    UserConfig[:"mikutter-find-tl-bg-color"] ||= [65535, 32767, 32767]
+  UserConfig[:"mikutter-find-tl-bg-color"] ||= [65535, 32767, 32767]
+  UserConfig[:"mikutter-find-tl-font-color"] ||= [0, 0, 0]
+  UserConfig[:"mikutter-find-tl-font-face"] ||= UserConfig[:mumble_basic_font]
 
   # インクリメンタルサーチ用のクラス
   class IncrementalSearch
@@ -120,6 +122,30 @@ Plugin.create(:"mikutter-find-tl") {
     [message, new_color]
   }
 
+  # 検索結果のフォント色を変更する
+  filter_message_font_color { |message, color|
+    selected = message.is_a?(Gdk::MiraclePainter) && message.selected
+
+    new_color = if !selected && message.message[:search_match]
+      UserConfig[:"mikutter-find-tl-font-color"]
+    else
+      color
+    end
+
+    [message, new_color]
+  }
+
+  # 検索結果のフォントフェイスを変更する
+  filter_message_font { |message, font|
+    new_font = if message.message[:search_match]
+      UserConfig[:"mikutter-find-tl-font-face"]
+    else
+      font
+    end
+
+    [message, new_font]
+  }
+
   # 検索ボックスを閉じる
   def close_findbox!
     if @shown
@@ -194,8 +220,12 @@ Plugin.create(:"mikutter-find-tl") {
   }
 
 
-  settings(_("TL検索")){
-    color("一致したツイートの背景色", :"mikutter-find-tl-bg-color")
+  # 設定
+  settings(_("TL検索")) {
+    settings(_("一致したツイートのスタイル")) {
+      fontcolor(_("フォント"), :"mikutter-find-tl-font-face", :"mikutter-find-tl-font-color")
+      color(_("背景色"), :"mikutter-find-tl-bg-color")
+    }
   }
 }
 
